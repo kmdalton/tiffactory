@@ -17,12 +17,13 @@ import h5py
 import numpy as np
 import argparse
 
+hdf5Dir = None #Change me!!
 
 LITTLE_ENDIAN = 1234
 BIG_ENDIAN = 4321
 
 def getRxHeader():
-    rxfile = open('/reg/d/psdm/xpp/xpplq9215/results/pickle_to_rx/reference.rx.tiff','rb')
+    rxfile = open('template.tiff','rb')
     header=rxfile.read(4096)
     return header
 
@@ -185,7 +186,7 @@ def get_brightest(runs, target_path):
     last_rot_index = 0
     for r in runs:
 
-        hdf5_path = '/reg/d/psdm/xpp/xpplq9215/scratch/hdf5/r%03d.h5' % int(r)
+        hdf5_path = hdf5Dir + '/r%03d.h5' % int(r)
         print '> reading: %s' % hdf5_path
         f = h5py.File(hdf5_path, 'r')
 
