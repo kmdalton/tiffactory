@@ -1,3 +1,3 @@
-We burned down the pickle farm. In it's place:
+We burned down the pickle farm. In its place:
 # tiffactory
 
