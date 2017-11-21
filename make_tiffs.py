@@ -38,7 +38,7 @@ def dump_run_range(x):
     hdf5_to_tiff.get_brightest(range(i,j+1), target_dir)
   #TODO: better error handling
   except:
-    "Shrug... something bad happened with TJ's code. Blame TJ. I was working on {}".format(target_dir)
+    "Shrug... something bad happened. I was working on {}".format(target_dir)
 
 nprocs = cpu_count()
 print "Running on {} cores".format(nprocs)
