@@ -17,13 +17,13 @@ import h5py
 import numpy as np
 import argparse
 
-hdf5Dir = None #Change me!!
+hdf5Dir = "/home/kevin/lab_share/xpplq9215" #Change me!!
 
 LITTLE_ENDIAN = 1234
 BIG_ENDIAN = 4321
 
 def getRxHeader():
-    rxfile = open('template.tiff','rb')
+    rxfile = open(__file__ + 'template.tiff','rb')
     header=rxfile.read(4096)
     return header
 
@@ -171,7 +171,7 @@ def write_tiff(file_handle, index, path, delta_phi, rot):
     return
 
 
-def get_brightest(runs, target_path):
+def sort_brightest(runs, target_path):
 
 
     print '*'*50
@@ -201,11 +201,15 @@ def get_brightest(runs, target_path):
 
         for rot in np.unique(rotation_index[1:]):
 
-            best_off = np.argmax( (rotation_index == rot) * (pumped == 0) * readout * ipm3 )
-            best_on  = np.argmax( (rotation_index == rot) * (pumped == 1) * readout * ipm3 )
+            off_shots = (rotation_index == rot) * (pumped == 0) * readout * ipm3 
+            best_off  = np.argsort(off_shots)[-np.sum(off_shots>0):][::-1]
+            on_shots  = (rotation_index == rot) * (pumped == 1) * readout * ipm3
+            best_on   = np.argsort(on_shots)[-np.sum(on_shots>0):][::-1]
 
-            write_tiff(f, best_off, '%s/off/x_%05d.tiff' % (target_path, rot), delta_phi, rot)
-            write_tiff(f, best_on,  '%s/on/x_%05d.tiff' % (target_path, rot), delta_phi, rot)
+            for i,idx in enumerate(best_off, 1):
+                write_tiff(f, idx, '%s/off/%d_%05d.tiff' % (target_path, i, rot), delta_phi, rot)
+            for i,idx in enumerate(best_on, 1):
+                write_tiff(f, idx, '%s/on/%d_%05d.tiff' % (target_path, i, rot), delta_phi, rot)
 
         f.close()
         last_rot_index = rotation_index[-1]
@@ -220,7 +224,7 @@ def main():
     parser.add_argument('target_dir', type=str, help='place to save tiffs')    
     args = parser.parse_args()
 
-    get_brightest(args.runs, args.target_dir)
+    sort_brightest(args.runs, args.target_dir)
 
     return
 
