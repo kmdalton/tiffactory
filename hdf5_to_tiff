@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 """
 We will use the following naming convention
@@ -17,13 +18,13 @@ import h5py
 import numpy as np
 import argparse
 
-hdf5Dir = "/home/kevin/lab_share/xpplq9215" #Change me!!
+hdf5Dir = "/reg/neh/home/kmdalton/lq92/scratch/hdf5_compressed" #Change me!!
 
 LITTLE_ENDIAN = 1234
 BIG_ENDIAN = 4321
 
 def getRxHeader():
-    rxfile = open(__file__ + 'template.tiff','rb')
+    rxfile = open(os.path.dirname(os.path.realpath(__file__)) + '/' + 'template.tiff','rb')
     header=rxfile.read(4096)
     return header
 
