@@ -182,7 +182,8 @@ def sort_brightest(runs, target_path):
     print '--> %s' % target_path
 
     os.system('mkdir -p %s' % target_path)
-    os.system('mkdir %s/on' % target_path)
+    os.system('mkdir %s/on1' % target_path)
+    os.system('mkdir %s/on2' % target_path)
     os.system('mkdir %s/off' % target_path)
 
     last_rot_index = 0
