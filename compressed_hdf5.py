@@ -15,6 +15,7 @@ import sys
 import psana
 import numpy as np
 import tables
+from experiment_params import *
 
 experiment_name = 'xppls5316' #CHANGE ME
 
@@ -27,7 +28,7 @@ smldata = ds.small_data('/reg/d/psdm/xpp/%s/scratch/hdf5/tmp.h5' % experiment_na
 
 # >>> NEW -- duck type in compression
 FILTER = tables.Filters(complib='zlib', complevel=5)
-f = tables.open_file('/reg/d/psdm/xpp/%s/scratch/hdf5/r%03d.h5' % experiment_name, run, 
+f = tables.open_file('/reg/d/psdm/xpp/%s/scratch/hdf5/r%03d.h5' % (experiment_name, run), 
                      mode='w', filters=FILTER)
 if smldata.master:
     smldata._small_file.file_handle = f

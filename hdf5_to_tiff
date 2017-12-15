@@ -17,8 +17,9 @@ import struct
 import h5py
 import numpy as np
 import argparse
+from experiment_params import *
 
-hdf5Dir = "/reg/neh/home/kmdalton/lq92/scratch/hdf5_compressed" #Change me!!
+hdf5Dir = "/reg/d/psdm/xpp/%s/scratch/hdf5/" % experiment_name
 
 LITTLE_ENDIAN = 1234
 BIG_ENDIAN = 4321
@@ -204,13 +205,17 @@ def sort_brightest(runs, target_path):
 
             off_shots = (rotation_index == rot) * (pumped == 0) * readout * ipm3 
             best_off  = np.argsort(off_shots)[-np.sum(off_shots>0):][::-1]
-            on_shots  = (rotation_index == rot) * (pumped == 1) * readout * ipm3
-            best_on   = np.argsort(on_shots)[-np.sum(on_shots>0):][::-1]
+            on1_shots  = (rotation_index == rot) * (pumped == 1) * readout * ipm3
+            best_on1   = np.argsort(on1_shots)[-np.sum(on1_shots>0):][::-1]
+            on2_shots  = (rotation_index == rot) * (pumped == 1) * readout * ipm3
+            best_on2   = np.argsort(on2_shots)[-np.sum(on2_shots>0):][::-1]
 
             for i,idx in enumerate(best_off, 1):
                 write_tiff(f, idx, '%s/off/%d_%05d.tiff' % (target_path, i, rot), delta_phi, rot)
-            for i,idx in enumerate(best_on, 1):
-                write_tiff(f, idx, '%s/on/%d_%05d.tiff' % (target_path, i, rot), delta_phi, rot)
+            for i,idx in enumerate(best_on1, 1):
+                write_tiff(f, idx, '%s/on1/%d_%05d.tiff' % (target_path, i, rot), delta_phi, rot)
+            for i,idx in enumerate(best_on2, 1):
+                write_tiff(f, idx, '%s/on2/%d_%05d.tiff' % (target_path, i, rot), delta_phi, rot)
 
         f.close()
         last_rot_index = rotation_index[-1]
