@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 """
 For Hekstra. Grab images and corresponding metadata:
@@ -17,11 +18,10 @@ import numpy as np
 import tables
 from experiment_params import *
 
-experiment_name = 'xppls5316' #CHANGE ME
 
 run = int(sys.argv[-1])
 
-ds = psana.MPIDataSource('exp=%s:run=%d' % experiment_name, run)
+ds = psana.MPIDataSource('exp=%s:run=%d' % (experiment_name, run))
 #ds.break_after(120)
 smldata = ds.small_data('/reg/d/psdm/xpp/%s/scratch/hdf5/tmp.h5' % experiment_name,
                         gather_interval=8)
@@ -34,11 +34,15 @@ if smldata.master:
     smldata._small_file.file_handle = f
     #smldata.file_handle = f # tjl sayz no
 # <<<
+print psana.Detector
 
-sam_rot = psana.Detector('hekstraphi_DB')
+sam_rot = psana.Detector('hekstra_phi')
+#Old timetool stuff for the THz experiment
+"""
 tt_edge = psana.Detector('XPP:TIMETOOL:FLTPOS')
 tt_famp = psana.Detector('XPP:TIMETOOL:AMPL')
 tt_fwhm = psana.Detector('XPP:TIMETOOL:FLTPOSFWHM')
+"""
 
 rayonix    = psana.Detector('rayonix')
 work_dist  = psana.Detector('XPP:ROB:POS:Z')
@@ -56,9 +60,9 @@ for nevt, evt in enumerate(ds.events()):
     smldata.event(rayonix        = img,
                   work_dist      = work_dist(evt),
                   rotation_angle = sam_rot(evt),
-                  tt_edge        = tt_edge(evt),
-                  tt_famp        = tt_famp(evt),
-                  tt_fwhm        = tt_fwhm(evt),
+                  #tt_edge        = tt_edge(evt),
+                  #tt_famp        = tt_famp(evt),
+                  #tt_fwhm        = tt_fwhm(evt),
                   ipm3           = ipm3.sum(evt))
 
     if (nevt % 120) == 0:

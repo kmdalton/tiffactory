@@ -194,22 +194,24 @@ def sort_brightest(runs, target_path):
         f = h5py.File(hdf5_path, 'r')
 
         readout = np.array(f['evr/code_95']) * np.array(f['evr/code_97'])
-        pumped  = np.array(f['evr/code_90'])
+        pumped1 = np.array(f['evr/code_92']) * np.array(f['evr/code_97'])
+        pumped2 = np.array(f['evr/code_93']) * np.array(f['evr/code_97'])
         ipm3    = np.array(f['ipm3'])
 
         rotation  = np.array(f['rotation_angle'])
         delta_phi = 0.25
 
         rotation_index = np.abs( np.round(((rotation - rotation[1]) / delta_phi)).astype(np.int) ) + last_rot_index + 1
+        #rotation_index = np.round(rotation*100000)
 
         for rot in np.unique(rotation_index[1:]):
-
-            off_shots = (rotation_index == rot) * (pumped == 0) * readout * ipm3 
-            best_off  = np.argsort(off_shots)[-np.sum(off_shots>0):][::-1]
-            on1_shots  = (rotation_index == rot) * (pumped == 1) * readout * ipm3
-            best_on1   = np.argsort(on1_shots)[-np.sum(on1_shots>0):][::-1]
-            on2_shots  = (rotation_index == rot) * (pumped == 1) * readout * ipm3
-            best_on2   = np.argsort(on2_shots)[-np.sum(on2_shots>0):][::-1]
+        #for rot in np.unique(rotation_index):
+            off_shots  = (rotation_index == rot) * (pumped1 == 0) * (pumped2 == 0) * readout * ipm3 
+            best_off   = np.argsort(off_shots)[np.sum(off_shots==0):][::-1]
+            on1_shots  = (rotation_index == rot) * (pumped1 == 1) * readout * ipm3
+            best_on1   = np.argsort(on1_shots)[np.sum(on1_shots==0):][::-1]
+            on2_shots  = (rotation_index == rot) * (pumped2 == 1) * readout * ipm3
+            best_on2   = np.argsort(on2_shots)[np.sum(on2_shots==0):][::-1]
 
             for i,idx in enumerate(best_off, 1):
                 write_tiff(f, idx, '%s/off/%d_%05d.tiff' % (target_path, i, rot), delta_phi, rot)
