@@ -34,7 +34,7 @@ if smldata.master:
     smldata._small_file.file_handle = f
     #smldata.file_handle = f # tjl sayz no
 # <<<
-print psana.Detector
+print(psana.Detector)
 
 sam_rot = psana.Detector('hekstra_phi')
 #Old timetool stuff for the THz experiment
@@ -54,7 +54,7 @@ for nevt, evt in enumerate(ds.events()):
     img = rayonix.calib(evt).astype(np.uint16)
 
     if img is None:
-        print 'no image!'
+        print('no image!')
         continue
 
     smldata.event(rayonix        = img,
@@ -66,6 +66,6 @@ for nevt, evt in enumerate(ds.events()):
                   ipm3           = ipm3.sum(evt))
 
     if (nevt % 120) == 0:
-        print 'Processed {:d} events'.format(nevt + 1)
+        print('Processed {:d} events'.format(nevt + 1))
 
 smldata.save()

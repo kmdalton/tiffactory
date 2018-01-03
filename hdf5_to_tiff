@@ -166,7 +166,7 @@ def write_tiff(file_handle, index, path, delta_phi, rot):
         }
 
     write_tiff_detail(d, path, delta_phi, rot)
-    print path
+    print(path)
 
     return
 
@@ -185,10 +185,10 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None):
         Iterables containing all the event codes corresponding to a nontrivial frame that was recorded from the detector. Defaults to ('evr/code_95', 'evr/code_97'). 
     """
 
-    print '*'*50
-    print ''
-    print 'PROCESSING FILE: {:s}'.format(hdf5_path)
-    print '--> {:s}'.format(target_path)
+    print('*'*50)
+    print('')
+    print('PROCESSING FILE: {:s}'.format(hdf5_path))
+    print('--> {:s}'.format(target_path))
 
     if readout is None:
         readout = ('evr/code_95', 'evr/code_97')
@@ -207,7 +207,7 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None):
 
     last_rot_index = 0
 
-    print '> reading: {:s}'.format(hdf5_path)
+    print('> reading: {:s}'.format(hdf5_path))
     f = h5py.File(hdf5_path, 'r')
     ipm3      = np.array(f['ipm3'])
     readout   = np.product([f[k] for k in readout], 0)
