@@ -51,7 +51,7 @@ ipm3 = psana.Detector('XppSb3_Ipm')
 
 for nevt, evt in enumerate(ds.events()):
 
-    img = rayonix.calib(evt).astype(np.int16)
+    img = rayonix.calib(evt).astype(np.uint16)
 
     if img is None:
         print 'no image!'
