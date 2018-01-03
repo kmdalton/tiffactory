@@ -21,14 +21,14 @@ from experiment_params import *
 
 run = int(sys.argv[-1])
 
-ds = psana.MPIDataSource('exp=%s:run=%d' % (experiment_name, run))
+ds = psana.MPIDataSource('exp={:s}:run={:d}'.format(experiment_name, run))
 #ds.break_after(120)
-smldata = ds.small_data('/reg/d/psdm/xpp/%s/scratch/hdf5/tmp.h5' % experiment_name,
+smldata = ds.small_data('/reg/d/psdm/xpp/{:s}/scratch/hdf5/tmp.h5'.format(experiment_name),
                         gather_interval=8)
 
 # >>> NEW -- duck type in compression
 FILTER = tables.Filters(complib='zlib', complevel=5)
-f = tables.open_file('/reg/d/psdm/xpp/%s/scratch/hdf5/r%03d.h5' % (experiment_name, run), 
+f = tables.open_file('/reg/d/psdm/xpp/{:s}/scratch/hdf5/r{:03d}.h5'.format(experiment_name, run), 
                      mode='w', filters=FILTER)
 if smldata.master:
     smldata._small_file.file_handle = f
@@ -66,6 +66,6 @@ for nevt, evt in enumerate(ds.events()):
                   ipm3           = ipm3.sum(evt))
 
     if (nevt % 120) == 0:
-        print 'Processed %d events' % (nevt + 1)
+        print 'Processed {:d} events'.format(nevt + 1)
 
 smldata.save()
