@@ -43,7 +43,7 @@ def tiff_byte_order_from_string(raw):
         assert(struct.unpack('>H', four_bytes[2:])[0] == 42)
         return BIG_ENDIAN
 
-    raise RuntimeError, '%s not recognised as TIFF' % filename
+    raise RuntimeError, '{:s} not recognised as TIFF'.format(filename)
 
 def modify_basic_image_size(tiff_header,newwidth,newheight):
     # basically an adaptation from dxtbx format FormatTIFFHelpers
@@ -187,8 +187,8 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None):
 
     print '*'*50
     print ''
-    print 'PROCESSING FILE: %s' % hdf5_path
-    print '--> %s' % target_path
+    print 'PROCESSING FILE: {:s}'.format(hdf5_path)
+    print '--> {:s}'.format(target_path)
 
     if readout is None:
         readout = ('evr/code_95', 'evr/code_97')
@@ -200,14 +200,14 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None):
             }
 
     
-    os.system('mkdir -p %s' % target_path)
+    os.system('mkdir -p {:s}'.format(target_path))
     for k in pumps:
-        os.system('mkdir %s/%s' % (target_path, k))
-    os.system('mkdir %s/off' % target_path)
+        os.system('mkdir {:s}/{:s}'.format(target_path, k))
+    os.system('mkdir {:s}/off'.format(target_path))
 
     last_rot_index = 0
 
-    print '> reading: %s' % hdf5_path
+    print '> reading: {:s}'.format(hdf5_path)
     f = h5py.File(hdf5_path, 'r')
     ipm3      = np.array(f['ipm3'])
     readout   = np.product([f[k] for k in readout], 0)
@@ -226,13 +226,13 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None):
         best_off   = np.argsort(best_off)[np.sum(best_off==0):][::-1]
 
         for i,idx in enumerate(best_off, 1):
-            write_tiff(f, idx, '%s/off/%d_%05d.tiff' % (target_path, i, rot), delta_phi, rot)
+            write_tiff(f, idx, '{:s}/off/{:d}_{:05d}.tiff'.format(target_path, i, rot), delta_phi, rot)
 
         for k,v in pumps.items():
             best_on   = (rotation_index == rot) * v * ipm3 
             best_on   = np.argsort(best_on)[np.sum(best_on==0):][::-1]
             for i,idx in enumerate(best_off, 1):
-                write_tiff(f, idx, '%s/%s/%d_%05d.tiff' % (target_path, k, i, rot), delta_phi, rot)
+                write_tiff(f, idx, '{:s}/{:s}/{:d}_{:05d}.tiff'.format(target_path, k, i, rot), delta_phi, rot)
 
     f.close()
     last_rot_index = rotation_index[-1]
