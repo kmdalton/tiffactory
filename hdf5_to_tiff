@@ -19,9 +19,6 @@ import numpy as np
 import argparse
 from experiment_params import *
 
-#hdf5Dir = "/reg/d/psdm/xpp/%s/scratch/hdf5/" % experiment_name
-hdf5Dir = "/reg/d/psdm/xpp/%s/scratch/amat/hdf5/" % experiment_name
-
 LITTLE_ENDIAN = 1234
 BIG_ENDIAN = 4321
 
@@ -174,27 +171,55 @@ def write_tiff(file_handle, index, path, delta_phi, rot):
     return
 
 
-def sort_brightest(hdf5_path, target_path):
+def sort_brightest(hdf5_path, target_path, pumps=None, readout=None):
+    """
+    Parameters
+    ----------
+    hdf5_path : str
+        HDF5 filename to convert to tiffs
+    target_path : str
+        Directory in which to output tiff files
+    pumps : dict (optional)
+        Dictionary of pump event codes {'pump_name': 'event_code'}. 'event_code' must be a valid key in the hdf5 file. The keys will determine the subdirectory names for the tiffs. Defaults to {'pump1': 'evr/code_92', 'pump2': 'evr/code_93'} which was the scheme we used for ef-x experiments during LS53.
+    readout : iterable of strings
+        Iterables containing all the event codes corresponding to a nontrivial frame that was recorded from the detector. Defaults to ('evr/code_95', 'evr/code_97'). 
+    """
 
     print '*'*50
     print ''
     print 'PROCESSING FILE: %s' % hdf5_path
     print '--> %s' % target_path
 
+    if readout is None:
+        readout = ('evr/code_95', 'evr/code_97')
+
+    if pumps is None:
+        pumps = {
+            'pump1': 'evr/code_92',
+            'pump2': 'evr/code_93',
+            }
+
+    
     os.system('mkdir -p %s' % target_path)
-    os.system('mkdir %s/on1' % target_path)
-    os.system('mkdir %s/on2' % target_path)
+    for k in pumps:
+        os.system('mkdir %s/%s' % (target_path, k))
     os.system('mkdir %s/off' % target_path)
 
     last_rot_index = 0
 
     print '> reading: %s' % hdf5_path
     f = h5py.File(hdf5_path, 'r')
-
-    readout = np.array(f['evr/code_95']) * np.array(f['evr/code_97'])
-    pumped1 = np.array(f['evr/code_92']) * np.array(f['evr/code_97'])
-    pumped2 = np.array(f['evr/code_93']) * np.array(f['evr/code_97'])
-    ipm3    = np.array(f['ipm3'])
+    #TODO: get rid of hard-coded event codes. Let's make this a dict like:
+    """
+    pumps = {
+        'pumped1': 'evr/code_92', 
+        'pumped2': 'evr/code_93', 
+    }
+    """
+    ipm3      = np.array(f['ipm3'])
+    readout   = np.product([f[k] for k in readout], 0)
+    pumps     = {k:np.array(f[v])*readout for k,v in pumps.items()}
+    off_shots = readout*(1. - np.max(pumps.values(), 0))
 
     rotation  = np.array(f['rotation_angle'])
     delta_phi = 0.25
@@ -204,19 +229,17 @@ def sort_brightest(hdf5_path, target_path):
 
     for rot in np.unique(rotation_index[1:]):
     #for rot in np.unique(rotation_index):
-        off_shots  = (rotation_index == rot) * (pumped1 == 0) * (pumped2 == 0) * readout * ipm3 
-        best_off   = np.argsort(off_shots)[np.sum(off_shots==0):][::-1]
-        on1_shots  = (rotation_index == rot) * (pumped1 == 1) * readout * ipm3
-        best_on1   = np.argsort(on1_shots)[np.sum(on1_shots==0):][::-1]
-        on2_shots  = (rotation_index == rot) * (pumped2 == 1) * readout * ipm3
-        best_on2   = np.argsort(on2_shots)[np.sum(on2_shots==0):][::-1]
+        best_off   = (rotation_index == rot) * off_shots * ipm3 
+        best_off   = np.argsort(best_off)[np.sum(best_off==0):][::-1]
 
         for i,idx in enumerate(best_off, 1):
             write_tiff(f, idx, '%s/off/%d_%05d.tiff' % (target_path, i, rot), delta_phi, rot)
-        for i,idx in enumerate(best_on1, 1):
-            write_tiff(f, idx, '%s/on1/%d_%05d.tiff' % (target_path, i, rot), delta_phi, rot)
-        for i,idx in enumerate(best_on2, 1):
-            write_tiff(f, idx, '%s/on2/%d_%05d.tiff' % (target_path, i, rot), delta_phi, rot)
+
+        for k,v in pumps.items():
+            best_on   = (rotation_index == rot) * v * ipm3 
+            best_on   = np.argsort(best_on)[np.sum(best_on==0):][::-1]
+            for i,idx in enumerate(best_off, 1):
+                write_tiff(f, idx, '%s/%s/%d_%05d.tiff' % (target_path, k, i, rot), delta_phi, rot)
 
     f.close()
     last_rot_index = rotation_index[-1]
@@ -228,11 +251,19 @@ def main():
     
     parser = argparse.ArgumentParser()
     parser.add_argument('hdf5_file', type=str, nargs='+', help='hdf5 files to process')
+    parser.add_argument('--code', type=str, nargs='+', help="Event codes of the pumps in the experiment. Defaults to 92 93 which is suitable for LS53. Previous experiments with a single delay should just use 90", default=None)
     parser.add_argument('target_dir', type=str, help='place to save tiffs')    
     args = parser.parse_args()
 
+    pumps = {
+        'pumped1': 'evr/code_92',
+        'pumped2': 'evr/code_93',
+    }
+    if args.code is not None:
+        pumps = {'pumped{:d}'.format(i): 'evr/code_{:s}'.format(code) for i,code in enumerate(args.code, 1)}
+
     for hdf5_path in args.hdf5_file:
-        sort_brightest(hdf5_path, args.target_dir)
+        sort_brightest(hdf5_path, args.target_dir, pumps)
 
     return
 
