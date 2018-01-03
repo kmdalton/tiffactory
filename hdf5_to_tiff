@@ -209,13 +209,6 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None):
 
     print '> reading: %s' % hdf5_path
     f = h5py.File(hdf5_path, 'r')
-    #TODO: get rid of hard-coded event codes. Let's make this a dict like:
-    """
-    pumps = {
-        'pumped1': 'evr/code_92', 
-        'pumped2': 'evr/code_93', 
-    }
-    """
     ipm3      = np.array(f['ipm3'])
     readout   = np.product([f[k] for k in readout], 0)
     pumps     = {k:np.array(f[v])*readout for k,v in pumps.items()}
@@ -243,12 +236,10 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None):
 
     f.close()
     last_rot_index = rotation_index[-1]
-
     return
 
 
 def main():
-    
     parser = argparse.ArgumentParser()
     parser.add_argument('hdf5_file', type=str, nargs='+', help='hdf5 files to process')
     parser.add_argument('--code', type=str, nargs='+', help="Event codes of the pumps in the experiment. Defaults to 92 93 which is suitable for LS53. Previous experiments with a single delay should just use 90", default=None)
