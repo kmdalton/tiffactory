@@ -231,7 +231,7 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None):
         for k,v in pumps.items():
             best_on   = (rotation_index == rot) * v * ipm3 
             best_on   = np.argsort(best_on)[np.sum(best_on==0):][::-1]
-            for i,idx in enumerate(best_off, 1):
+            for i,idx in enumerate(best_on, 1):
                 write_tiff(f, idx, '{:s}/{:s}/{:d}_{:05d}.tiff'.format(target_path, k, i, rot), delta_phi, rot)
 
     f.close()
