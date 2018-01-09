@@ -48,6 +48,7 @@ rayonix    = psana.Detector('rayonix')
 work_dist  = psana.Detector('XPP:ROB:POS:Z')
 
 ipm3 = psana.Detector('XppSb3_Ipm')
+ipm2 = psana.Detector('XppSb2_Ipm')
 
 for nevt, evt in enumerate(ds.events()):
 
@@ -63,6 +64,7 @@ for nevt, evt in enumerate(ds.events()):
                   #tt_edge        = tt_edge(evt),
                   #tt_famp        = tt_famp(evt),
                   #tt_fwhm        = tt_fwhm(evt),
+                  ipm2           = ipm2.sum(evt),
                   ipm3           = ipm3.sum(evt))
 
     if (nevt % 120) == 0:
