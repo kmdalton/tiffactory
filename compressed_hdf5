@@ -16,6 +16,7 @@ import sys
 import psana
 import numpy as np
 import tables
+from os import remove
 from experiment_params import *
 
 
@@ -25,7 +26,7 @@ run = int(sys.argv[-1])
 
 ds = psana.MPIDataSource('exp={:s}:run={:d}'.format(experiment_name, run))
 #ds.break_after(120)
-smldata = ds.small_data('{:s}/tmp.h5'.format(outdir),
+smldata = ds.small_data('{:s}/tmp{:03d}.h5'.format(outdir, run),
                         gather_interval=8)
 
 # >>> NEW -- duck type in compression
@@ -83,3 +84,7 @@ for nevt, evt in enumerate(ds.events()):
         print('Processed {:d} events'.format(nevt + 1))
 
 smldata.save()
+
+
+#Delete temporary file
+remove('{:s}/tmp{:03d}.h5'.format(outdir, run))
