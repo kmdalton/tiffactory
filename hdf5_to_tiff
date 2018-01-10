@@ -171,7 +171,7 @@ def write_tiff(file_handle, index, path, delta_phi, rot):
     return
 
 
-def sort_brightest(hdf5_path, target_path, pumps=None, readout=None):
+def sort_brightest(hdf5_path, target_path, pumps=None, readout=None, metadata=None):
     """
     Parameters
     ----------
@@ -183,6 +183,8 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None):
         Dictionary of pump event codes {'pump_name': 'event_code'}. 'event_code' must be a valid key in the hdf5 file. The keys will determine the subdirectory names for the tiffs. Defaults to {'pump1': 'evr/code_92', 'pump2': 'evr/code_93'} which was the scheme we used for ef-x experiments during LS53.
     readout : iterable of strings
         Iterables containing all the event codes corresponding to a nontrivial frame that was recorded from the detector. Defaults to ('evr/code_95', 'evr/code_97'). 
+    metadata : iterable of strings
+        List of event codes to write out as metadata in a tsv file.
     """
 
     print('*'*50)
@@ -209,41 +211,45 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None):
 
     print('> reading: {:s}'.format(hdf5_path))
     f = h5py.File(hdf5_path, 'r')
-    ipm3      = np.array(f['ipm3'])
-    readout   = np.product([f[k] for k in readout], 0)
-    pumps     = {k:np.array(f[v])*readout for k,v in pumps.items()}
-    off_shots = readout*(1. - np.max(pumps.values(), 0))
+    ipm3         = np.array(f['ipm3'])
+    readout      = np.product([f[k] for k in readout], 0)
+    shots        = {k:np.array(f[v])*readout for k,v in pumps.items()}
+    shots['off'] = readout*(1. - np.max(shots.values(), 0))
 
     rotation  = np.array(f['rotation_angle'])
     delta_phi = 0.25
 
     rotation_index = np.abs( np.round(((rotation - rotation[1]) / delta_phi)).astype(np.int) ) + last_rot_index + 1
     #rotation_index = np.round(rotation*100000)
+    metadata_files = {k:open('{:s}/{:s}/metadata.tsv'.format(target_path, k), 'w') for k in shots}
+    header = '\t'.join(['filename'] + metadata) + '\n'
+    for k in metadata_files:
+        metadata_files[k].write(header)
 
     for rot in np.unique(rotation_index[1:]):
     #for rot in np.unique(rotation_index):
-        best_off   = (rotation_index == rot) * off_shots * ipm3 
-        best_off   = np.argsort(best_off)[np.sum(best_off==0):][::-1]
-
-        for i,idx in enumerate(best_off, 1):
-            write_tiff(f, idx, '{:s}/off/{:d}_{:05d}.tiff'.format(target_path, i, rot), delta_phi, rot)
-
-        for k,v in pumps.items():
-            best_on   = (rotation_index == rot) * v * ipm3 
-            best_on   = np.argsort(best_on)[np.sum(best_on==0):][::-1]
-            for i,idx in enumerate(best_on, 1):
-                write_tiff(f, idx, '{:s}/{:s}/{:d}_{:05d}.tiff'.format(target_path, k, i, rot), delta_phi, rot)
+        for k,v in shots.items():
+            best   = (rotation_index == rot) * v * ipm3 
+            best   = np.argsort(best)[np.sum(best==0):][::-1]
+            for i,idx in enumerate(best, 1):
+                filename = '{:d}_{:05d}.tiff'.format(i, rot)
+                dirname  = '{:s}/{:s}/'.format(target_path, k)
+                write_tiff(f, idx, dirname + filename, delta_phi, rot)
+                if metadata is not None:
+                    metadata_files[k].write('\t'.join([filename] + [str(f[l][idx]) for l in metadata]) + '\n')
 
     f.close()
+    for k in metadata_files:
+        metadata_files[k].close()
     last_rot_index = rotation_index[-1]
     return
-
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('hdf5_file', type=str, nargs='+', help='hdf5 files to process')
     parser.add_argument('--code', type=str, nargs='+', help="Event codes of the pumps in the experiment. Defaults to 92 93 which is suitable for LS53. Previous experiments with a single delay should just use 90", default=None)
     parser.add_argument('target_dir', type=str, help='place to save tiffs')    
+    parser.add_argument('--metadata', nargs='+', type=str, help='HDF5 file keys for metadata to be written in the same directory as the tiff files', default=None)    
     args = parser.parse_args()
 
     pumps = {
@@ -252,9 +258,11 @@ def main():
     }
     if args.code is not None:
         pumps = {'pumped{:d}'.format(i): 'evr/code_{:s}'.format(code) for i,code in enumerate(args.code, 1)}
+    print args.metadata
+    print args.code
 
     for hdf5_path in args.hdf5_file:
-        sort_brightest(hdf5_path, args.target_dir, pumps)
+        sort_brightest(hdf5_path, args.target_dir, pumps, None, args.metadata)
 
     return
 
