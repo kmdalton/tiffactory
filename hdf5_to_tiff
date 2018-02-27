@@ -235,8 +235,9 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None, metadata=No
                 filename = '{:d}_{:05d}.tiff'.format(i, rot)
                 dirname  = '{:s}/{:s}/'.format(target_path, k)
                 write_tiff(f, idx, dirname + filename, delta_phi, rot)
+                formatify = lambda x: ','.join(map(str, x)) if hasattr(x, '__len__') else str(x)
                 if metadata is not None:
-                    metadata_files[k].write('\t'.join([filename] + [str(f[l][idx]) for l in metadata]) + '\n')
+                    metadata_files[k].write('\t'.join([filename] + [formatify(f[l][idx]) for l in metadata]) + '\n')
 
     f.close()
     for k in metadata_files:
@@ -247,9 +248,9 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None, metadata=No
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('hdf5_file', type=str, nargs='+', help='hdf5 files to process')
-    parser.add_argument('--code', type=str, nargs='+', help="Event codes of the pumps in the experiment. Defaults to 92 93 which is suitable for LS53. Previous experiments with a single delay should just use 90", default=None)
-    parser.add_argument('target_dir', type=str, help='place to save tiffs')    
+    parser.add_argument('--out', type=str, help='Directory path to save tiffs. Defaults to current working directory.', default='.')    
     parser.add_argument('--metadata', nargs='+', type=str, help='HDF5 file keys for metadata to be written in the same directory as the tiff files', default=None)    
+    parser.add_argument('--code', type=int, nargs='+', help="Event codes of the pumps in the experiment. Defaults to 92 93 which is suitable for LS53. Previous experiments with a single delay should just use 90", default=None)
     args = parser.parse_args()
 
     pumps = {
@@ -257,12 +258,12 @@ def main():
         'pumped2': 'evr/code_93',
     }
     if args.code is not None:
-        pumps = {'pumped{:d}'.format(i): 'evr/code_{:s}'.format(code) for i,code in enumerate(args.code, 1)}
+        pumps = {'pumped{:d}'.format(i): 'evr/code_{:}'.format(code) for i,code in enumerate(args.code, 1)}
     print args.metadata
     print args.code
 
     for hdf5_path in args.hdf5_file:
-        sort_brightest(hdf5_path, args.target_dir, pumps, None, args.metadata)
+        sort_brightest(hdf5_path, args.out, pumps, None, args.metadata)
 
     return
 

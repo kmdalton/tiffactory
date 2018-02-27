@@ -12,79 +12,123 @@ For Hekstra. Grab images and corresponding metadata:
 
 """
 
-import sys
-import psana
+import sys, psana, tables, argparse
 import numpy as np
-import tables
 from os import remove
-from experiment_params import *
+
+#Sadly this cannot be conveniently generalized
+phi_names = {
+    "xpplq9215": "sam_rot",
+    "xppls5316": "hekstra_phi",
+}
 
 
 
+def save_hdf5(run, experiment_name, outdir, timetool, FILTER=None):
+    ds = psana.MPIDataSource('exp={:s}:run={:d}'.format(experiment_name, run))
+    #ds.break_after(120)
+    smldata = ds.small_data('{:s}/tmp{:03d}.h5'.format(outdir, run),
+                            gather_interval=8)
 
-run = int(sys.argv[-1])
-
-ds = psana.MPIDataSource('exp={:s}:run={:d}'.format(experiment_name, run))
-#ds.break_after(120)
-smldata = ds.small_data('{:s}/tmp{:03d}.h5'.format(outdir, run),
-                        gather_interval=8)
-
-# >>> NEW -- duck type in compression
-FILTER = tables.Filters(complib='zlib', complevel=5)
-f = tables.open_file('{:s}/r{:03d}.h5'.format(outdir, run), 
-                     mode='w', filters=FILTER)
-if smldata.master:
-    smldata._small_file.file_handle = f
-    #smldata.file_handle = f # tjl sayz no
-# <<<
-print(psana.Detector)
-
-sam_rot = psana.Detector(phi_name)
-
-
-#Timetool stuff for the THz experiment
-if timetool:
-    tt_edge = psana.Detector('XPP:TIMETOOL:FLTPOS')
-    tt_famp = psana.Detector('XPP:TIMETOOL:AMPL')
-    tt_fwhm = psana.Detector('XPP:TIMETOOL:FLTPOSFWHM')
-
-
-rayonix    = psana.Detector('rayonix')
-work_dist  = psana.Detector('XPP:ROB:POS:Z')
-
-ipm3 = psana.Detector('XppSb3_Ipm')
-ipm2 = psana.Detector('XppSb2_Ipm')
-
-for nevt, evt in enumerate(ds.events()):
-
-    img = rayonix.calib(evt).astype(np.uint16)
-
-    if img is None:
-        print('no image!')
-        continue
-
-    if timetool:
-        smldata.event(rayonix        = img,
-                      work_dist      = work_dist(evt),
-                      rotation_angle = sam_rot(evt),
-                      tt_edge        = tt_edge(evt),
-                      tt_famp        = tt_famp(evt),
-                      tt_fwhm        = tt_fwhm(evt),
-                      ipm2           = ipm2.sum(evt),
-                      ipm3           = ipm3.sum(evt))
-
+    # >>> NEW -- duck type in compression
+    if FILTER is not None:
+        f = tables.open_file('{:s}/r{:03d}.h5'.format(outdir, run), 
+                         mode='w', filters=FILTER)
     else:
-        smldata.event(rayonix        = img,
-                      work_dist      = work_dist(evt),
-                      rotation_angle = sam_rot(evt),
-                      ipm2           = ipm2.sum(evt),
-                      ipm3           = ipm3.sum(evt))
+        f = tables.open_file('{:s}/r{:03d}.h5'.format(outdir, run), 
+                         mode='w')
+    if smldata.master:
+        smldata._small_file.file_handle = f
+        #smldata.file_handle = f # tjl sayz no
+    # <<<
+    print(psana.Detector)
 
-    if (nevt % 120) == 0:
-        print('Processed {:d} events'.format(nevt + 1))
-
-smldata.save()
+    sam_rot = psana.Detector(phi_names[experiment_name])
 
 
-#Delete temporary file
-remove('{:s}/tmp{:03d}.h5'.format(outdir, run))
+    #Timetool stuff for the THz experiment
+    if timetool:
+        tt_edge = psana.Detector('XPP:TIMETOOL:FLTPOS')
+        tt_famp = psana.Detector('XPP:TIMETOOL:AMPL')
+        tt_fwhm = psana.Detector('XPP:TIMETOOL:FLTPOSFWHM')
+
+
+    rayonix    = psana.Detector('rayonix')
+    work_dist  = psana.Detector('XPP:ROB:POS:Z')
+
+    ipm3 = psana.Detector('XppSb3_Ipm')
+    ipm2 = psana.Detector('XppSb2_Ipm')
+
+    for nevt, evt in enumerate(ds.events()):
+
+        img = rayonix.calib(evt).astype(np.uint16)
+
+        if img is None:
+            print('no image!')
+            continue
+
+        if timetool:
+            smldata.event(
+                          rayonix        = img,
+                          work_dist      = work_dist(evt),
+                          rotation_angle = sam_rot(evt),
+                          tt_edge        = tt_edge(evt),
+                          tt_famp        = tt_famp(evt),
+                          tt_fwhm        = tt_fwhm(evt),
+                          ipm2           = ipm2.sum(evt),
+                          ipm2_channels  = ipm2.channel(evt),
+                          ipm2_xpos      = ipm2.xpos(evt),
+                          ipm2_ypos      = ipm2.ypos(evt),
+                          ipm3           = ipm3.sum(evt),
+                          ipm3_channels  = ipm3.channel(evt),
+                          ipm3_xpos      = ipm3.xpos(evt),
+                          ipm3_ypos      = ipm3.ypos(evt),
+                      )
+
+        else:
+            smldata.event(
+                          rayonix        = img,
+                          work_dist      = work_dist(evt),
+                          rotation_angle = sam_rot(evt),
+                          ipm2           = ipm2.sum(evt),
+                          ipm2_channels  = ipm2.channel(evt),
+                          ipm2_xpos      = ipm2.xpos(evt),
+                          ipm2_ypos      = ipm2.ypos(evt),
+                          ipm3           = ipm3.sum(evt),
+                          ipm3_channels  = ipm3.channel(evt),
+                          ipm3_xpos      = ipm3.xpos(evt),
+                          ipm3_ypos      = ipm3.ypos(evt),
+                      )
+
+        if (nevt % 120) == 0:
+            print('Processed {:d} events'.format(nevt + 1))
+
+    smldata.save()
+
+
+    #Delete temporary file
+    remove('{:s}/tmp{:03d}.h5'.format(outdir, run))
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('experiment', type=str, help='Name of the experiment. Right now the options are "xpplq9215" and "xppls5316"')
+    parser.add_argument('directory', type=str, help='Output directory for hdf5 files')
+    parser.add_argument('run', type=int, nargs='+', help='Run(s) to dump to hdf5 file(s)')
+    parser.add_argument('--compressed', help='Use compression for the output file(s)', action='store_true')
+    parser.add_argument('--complib', type=str, help='Set compression library for output file(s). Default is "zlib".', default='zlib')
+    parser.add_argument('--complevel', type=int, help='Set compression level. Default is 5.', default=5)
+    parser.add_argument('--tt', help='The experiment has timetool data to output.', action='store_true')
+    args = parser.parse_args()
+    if args.compressed:
+        FILTER = tables.Filters(complib=args.complib, complevel=args.complevel)
+    else:
+        FILTER = None
+
+    for run in args.run:
+        print run
+        print args.experiment
+        save_hdf5(run, args.experiment, args.directory, args.tt, FILTER)
+
+if __name__=='__main__':
+    main()
