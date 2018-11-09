@@ -61,11 +61,13 @@ def save_hdf5(run, experiment_name, outdir, timetool, FILTER=None):
 
     for nevt, evt in enumerate(ds.events()):
 
-        img = rayonix.calib(evt).astype(np.uint16)
+        img = rayonix.calib(evt)
 
         if img is None:
             print('no image!')
             continue
+
+        img = img.astype(np.uint16)
 
         if timetool:
             smldata.event(
@@ -128,6 +130,7 @@ def main():
     for run in args.run:
         print run
         print args.experiment
+        print args.tt
         save_hdf5(run, args.experiment, args.directory, args.tt, FILTER)
 
 if __name__=='__main__':
