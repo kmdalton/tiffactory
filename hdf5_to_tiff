@@ -17,7 +17,7 @@ import struct
 import h5py
 import numpy as np
 import argparse
-from experiment_params import *
+#from experiment_params import *
 
 LITTLE_ENDIAN = 1234
 BIG_ENDIAN = 4321
@@ -36,14 +36,14 @@ def push_data(source,form,offset,index,typelen,value):
 def tiff_byte_order_from_string(raw):
     four_bytes = raw[0:4]
 
-    if 'II' in four_bytes[:2]:
+    if b'II' in four_bytes[:2]:
         assert(struct.unpack('<H', four_bytes[2:])[0] == 42)
         return LITTLE_ENDIAN
-    elif 'MM' in four_bytes[:2]:
+    elif b'MM' in four_bytes[:2]:
         assert(struct.unpack('>H', four_bytes[2:])[0] == 42)
         return BIG_ENDIAN
 
-    raise RuntimeError, '{:s} not recognised as TIFF'.format(filename)
+    raise RuntimeError('{:s} not recognised as TIFF'.format(filename))
 
 def modify_basic_image_size(tiff_header,newwidth,newheight):
     # basically an adaptation from dxtbx format FormatTIFFHelpers
@@ -147,7 +147,7 @@ def write_tiff_detail(d, path, delta_phi, angle_index):
 
   image_data = new_header + string_data
 
-  file(path,"wb").write(image_data)
+  open(path,"wb").write(image_data)
   return
 
 
@@ -214,7 +214,7 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None, metadata=No
     ipm3         = np.array(f['ipm3'])
     readout      = np.product([f[k] for k in readout], 0)
     shots        = {k:np.array(f[v])*readout for k,v in pumps.items()}
-    shots['off'] = readout*(1. - np.max(shots.values(), 0))
+    shots['off'] = readout*(1. - np.max(np.array(list(shots.values())), 0))
 
     rotation  = np.array(f['rotation_angle'])
     delta_phi = 0.25
@@ -259,8 +259,8 @@ def main():
     }
     if args.code is not None:
         pumps = {'pumped{:d}'.format(i): 'evr/code_{:}'.format(code) for i,code in enumerate(args.code, 1)}
-    print args.metadata
-    print args.code
+    print(args.metadata)
+    print(args.code)
 
     for hdf5_path in args.hdf5_file:
         sort_brightest(hdf5_path, args.out, pumps, None, args.metadata)
