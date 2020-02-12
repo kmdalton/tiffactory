@@ -171,7 +171,7 @@ def write_tiff(file_handle, index, path, delta_phi, rot):
     return
 
 
-def sort_brightest(hdf5_path, target_path, pumps=None, readout=None, metadata=None):
+def sort_brightest(hdf5_path, target_path, pumps=None, readout=None, metadata=None, sort_key='event_time', invert=False):
     """
     Parameters
     ----------
@@ -211,7 +211,8 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None, metadata=No
 
     print('> reading: {:s}'.format(hdf5_path))
     f = h5py.File(hdf5_path, 'r')
-    ipm3         = np.array(f['ipm3'])
+    #ipm3         = np.array(f['ipm3'])
+    sort_col     = np.array(f[sort_key])
     readout      = np.product([f[k] for k in readout], 0)
     shots        = {k:np.array(f[v])*readout for k,v in pumps.items()}
     shots['off'] = readout*(1. - np.max(np.array(list(shots.values())), 0))
@@ -229,7 +230,7 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None, metadata=No
     for rot in np.unique(rotation_index[1:]):
     #for rot in np.unique(rotation_index):
         for k,v in shots.items():
-            best   = (rotation_index == rot) * v * ipm3 
+            best   = (rotation_index == rot) * v * 
             best   = np.argsort(best)[np.sum(best==0):][::-1]
             for i,idx in enumerate(best, 1):
                 filename = '{:d}_{:05d}.tiff'.format(i, rot)
