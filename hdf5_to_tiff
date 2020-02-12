@@ -171,7 +171,7 @@ def write_tiff(file_handle, index, path, delta_phi, rot):
     return
 
 
-def sort_brightest(hdf5_path, target_path, pumps=None, readout=None, metadata=None, sort_key='event_time', invert=False):
+def output_sorted_images(hdf5_path, target_path, pumps=None, readout=None, metadata=None, sort_key="event_time", invert=False):
     """
     Parameters
     ----------
@@ -230,8 +230,10 @@ def sort_brightest(hdf5_path, target_path, pumps=None, readout=None, metadata=No
     for rot in np.unique(rotation_index[1:]):
     #for rot in np.unique(rotation_index):
         for k,v in shots.items():
-            best   = (rotation_index == rot) * v * 
-            best   = np.argsort(best)[np.sum(best==0):][::-1]
+            best   = (rotation_index == rot) * v * sort_col
+            best   = np.argsort(best)[np.sum(best==0):]
+            if invert:
+                best = best[::-1]
             for i,idx in enumerate(best, 1):
                 filename = '{:d}_{:05d}.tiff'.format(i, rot)
                 dirname  = '{:s}/{:s}/'.format(target_path, k)
@@ -251,7 +253,9 @@ def main():
     parser.add_argument('hdf5_file', type=str, nargs='+', help='hdf5 files to process')
     parser.add_argument('--out', type=str, help='Directory path to save tiffs. Defaults to current working directory.', default='.')    
     parser.add_argument('--metadata', nargs='+', type=str, help='HDF5 file keys for metadata to be written in the same directory as the tiff files', default=None)    
-    parser.add_argument('--code', type=int, nargs='+', help="Event codes of the pumps in the experiment. Defaults to 92 93 which is suitable for LS53. Previous experiments with a single delay should just use 90", default=None)
+    parser.add_argument('--code', type=int, nargs='+', help="Event codes of the pumps in the experiment. Defaults to 92 93 which is suitable for LS53. Previous experiments with a single delay should just use 90. If you want to process the on and off data together, use one of the readout event codes (95 or 97) then all the images will be placed in the pumped directory.", default=None)
+    parser.add_argument('--invert', type=bool, help="Invert image sort order.", default=False)
+    parser.add_argument('--sort-key', type=str, help="What metadata key to use for sorting image order. By default they are ordered chronologically.", default='event_time')
     args = parser.parse_args()
 
     pumps = {
@@ -264,7 +268,7 @@ def main():
     print(args.code)
 
     for hdf5_path in args.hdf5_file:
-        sort_brightest(hdf5_path, args.out, pumps, None, args.metadata)
+        output_sorted_images(hdf5_path, args.out, pumps, None, args.metadata, sort_key=args.sort_key, invert=args.invert)
 
     return
 
